@@ -23,9 +23,9 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 
 var _ = fs.HandleReadDirAller(&Dir{})
 
-func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+func (d *Dir) ReadDirAll(c context.Context) ([]fuse.Dirent, error) {
 	var res []fuse.Dirent
-	err := d.fs.db.View(func(ctx Context) error {
+	err := d.fs.db.View(c, func(ctx Context) error {
 		b := ctx.Dir()
 		if b == nil {
 			return errors.New("dir no longer exists")
@@ -48,9 +48,9 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 var _ = fs.NodeStringLookuper(&Dir{})
 
-func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
+func (d *Dir) Lookup(c context.Context, name string) (fs.Node, error) {
 	var n fs.Node
-	err := d.fs.db.View(func(ctx Context) error {
+	err := d.fs.db.View(c, func(ctx Context) error {
 		b := ctx.Dir()
 		if b == nil {
 			return errors.New("dir no longer exists")
@@ -84,9 +84,9 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 
 var _ = fs.NodeMkdirer(&Dir{})
 
-func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
+func (d *Dir) Mkdir(c context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
 	name := req.Name
-	err := d.fs.db.Update(func(ctx Context) error {
+	err := d.fs.db.Update(c, func(ctx Context) error {
 		b := ctx.Dir()
 		if b == nil {
 			return errors.New("dir no longer exists")
@@ -131,9 +131,9 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 
 var _ = fs.NodeRemover(&Dir{})
 
-func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
+func (d *Dir) Remove(c context.Context, req *fuse.RemoveRequest) error {
 	name := req.Name
-	fn := func(ctx Context) error {
+	return d.fs.db.Update(c, func(ctx Context) error {
 		b := ctx.Dir()
 		if b == nil {
 			return errors.New("dir no longer exists")
@@ -157,6 +157,5 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 			}
 		}
 		return nil
-	}
-	return d.fs.db.Update(fn)
+	})
 }

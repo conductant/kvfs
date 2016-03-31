@@ -16,12 +16,14 @@ type Backend struct {
 	Root  []string
 }
 
-func (this *Backend) View(f func(Context) error) error {
-	return nil
+func (this *Backend) View(c context.Context, f func(Context) error) error {
+	ctx := this.Context(c)
+	return f(ctx)
 }
 
-func (this *Backend) Update(f func(Context) error) error {
-	return nil
+func (this *Backend) Update(c context.Context, f func(Context) error) error {
+	ctx := this.Context(c)
+	return f(ctx)
 }
 
 func (this *Backend) Context(ctx context.Context) Context {
@@ -32,11 +34,11 @@ func (this *Backend) Context(ctx context.Context) Context {
 }
 
 type Config struct {
-	CertFile          string
-	KeyFile           string
-	CACertFile        string
+	CertFile          string `flag:"cert, The cert file"`
+	KeyFile           string `flag:"key, The key file"`
+	CACertFile        string `flag:"ca_cert, The CA cert file"`
 	TLS               *tls.Config
-	ConnectionTimeout time.Duration
+	ConnectionTimeout time.Duration `flag:"timeout,The timeout"`
 }
 
 func NewBackend(url string, c *Config) (*Backend, error) {
@@ -97,5 +99,10 @@ func NewBackend(url string, c *Config) (*Backend, error) {
 	default:
 		return nil, &ErrNotSupported{u.Scheme}
 	}
-	return backend, nil
+
+	// create the root dir
+	if root != "" {
+		err = backend.store.Put(root, []byte{}, nil)
+	}
+	return backend, err
 }

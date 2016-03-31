@@ -27,8 +27,8 @@ var _ = fs.Handle(&File{})
 // load calls fn inside a View with the contents of the file. Caller
 // must make a copy of the data if needed, because once we're out of
 // the transaction, bolt might reuse the db page.
-func (f *File) load(fn func([]byte)) error {
-	err := f.dir.fs.db.View(func(ctx Context) error {
+func (f *File) load(c context.Context, fn func([]byte)) error {
+	err := f.dir.fs.db.View(c, func(ctx Context) error {
 		b := ctx.Dir()
 		v := b.Get(f.name)
 		if v == nil {
@@ -40,7 +40,7 @@ func (f *File) load(fn func([]byte)) error {
 	return err
 }
 
-func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
+func (f *File) Attr(c context.Context, a *fuse.Attr) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -49,14 +49,14 @@ func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	if f.writers == 0 {
 		// not in memory, fetch correct size.
 		// Attr can't fail, so ignore errors
-		_ = f.load(func(b []byte) { a.Size = uint64(len(b)) })
+		_ = f.load(c, func(b []byte) { a.Size = uint64(len(b)) })
 	}
 	return nil
 }
 
 var _ = fs.NodeOpener(&File{})
 
-func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
+func (f *File) Open(c context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
 	if req.Flags.IsReadOnly() {
 		// we don't need to track read-only handles
 		return f, nil
@@ -70,7 +70,7 @@ func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenR
 		fn := func(b []byte) {
 			f.data = append([]byte(nil), b...)
 		}
-		if err := f.load(fn); err != nil {
+		if err := f.load(c, fn); err != nil {
 			return nil, err
 		}
 	}
@@ -99,7 +99,7 @@ func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 
 var _ = fs.HandleReader(&File{})
 
-func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
+func (f *File) Read(c context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -107,7 +107,7 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 		fuseutil.HandleRead(req, resp, b)
 	}
 	if f.writers == 0 {
-		f.load(fn)
+		f.load(c, fn)
 	} else {
 		fn(f.data)
 	}
@@ -138,7 +138,7 @@ func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.Wri
 
 var _ = fs.HandleFlusher(&File{})
 
-func (f *File) Flush(ctx context.Context, req *fuse.FlushRequest) error {
+func (f *File) Flush(c context.Context, req *fuse.FlushRequest) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -148,7 +148,7 @@ func (f *File) Flush(ctx context.Context, req *fuse.FlushRequest) error {
 		return nil
 	}
 
-	err := f.dir.fs.db.Update(func(ctx Context) error {
+	err := f.dir.fs.db.Update(c, func(ctx Context) error {
 		b := ctx.Dir()
 		return b.Put(f.name, f.data)
 	})

@@ -5,7 +5,7 @@ import (
 	"bazil.org/fuse/fs"
 )
 
-func mount(url, mountpoint string, config *Config) error {
+func Mount(url, mountpoint string, config *Config) error {
 	db, err := NewBackend(url, config)
 	if err != nil {
 		return err
