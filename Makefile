@@ -46,6 +46,7 @@ test:
 	${GODEP} go test ./... -v ${TEST_ARGS} -check.vv
 
 
+# UI at port 8080
 start-zk: create-cluster
 	-docker ${KV_CONFIG} run -d --name zk \
 		-p 8080:8080 -p 2181:2181 -p 2888:2888 -p 3888:3888 \
@@ -54,6 +55,7 @@ stop-zk:
 	-docker ${KV_CONFIG} stop zk
 	-docker ${KV_CONFIG} rm zk
 
+# UI at port 8500
 start-consul: create-cluster
 	-docker ${KV_CONFIG} run -d --name consul \
 		-p 8400:8400 -p 8500:8500 -p 8600:53/udp \
@@ -62,6 +64,7 @@ stop-consul:
 	-docker ${KV_CONFIG} stop consul
 	-docker ${KV_CONFIG} rm consul
 
+# UI at port 3000
 start-etcd: create-cluster
 	-docker ${KV_CONFIG} run -d --name etcd \
 		-p 4001:4001 -p 2380:2380 -p 2379:2379 quay.io/coreos/etcd:v2.0.3 \
