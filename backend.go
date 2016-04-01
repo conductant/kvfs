@@ -90,19 +90,13 @@ func NewBackend(url string, c *Config) (*Backend, error) {
 			return nil, err
 		}
 		backend.store = s
-	case "boltdb":
-		s, err := libkv.NewStore(store.BOLTDB, hosts, config)
-		if err != nil {
-			return nil, err
-		}
-		backend.store = s
 	default:
 		return nil, &ErrNotSupported{u.Scheme}
 	}
 
 	// create the root dir
 	if root != "" {
-		err = backend.store.Put(root, []byte{}, nil)
+		backend.store.Put(root, []byte{}, nil) // ignore error here.
 	}
-	return backend, err
+	return backend, nil
 }

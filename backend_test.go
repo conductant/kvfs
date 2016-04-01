@@ -24,16 +24,25 @@ func consulUrl() string {
 	return "consul://" + os.Getenv("CONSUL_HOSTS")
 }
 
+func etcdUrl() string {
+	return "etcd://" + os.Getenv("ETCD_HOSTS")
+}
+
 const (
 	testRoot = "unit-tests/backend_test/"
 )
 
-func (suite *TestSuiteBackend) SetUpSuite(c *C) {
-
-	for _, url := range []string{
+func kvstores() []string {
+	return []string{
 		zkUrl(),
 		consulUrl(),
-	} {
+		//etcdUrl(),
+	}
+}
+
+func (suite *TestSuiteBackend) SetUpSuite(c *C) {
+
+	for _, url := range kvstores() {
 		b, err := NewBackend(url, nil)
 		c.Assert(err, IsNil)
 		suite.stores = append(suite.stores, b.store)
@@ -67,8 +76,9 @@ func (suite *TestSuiteBackend) TestNewBackend(c *C) {
 	c.Assert(err, IsNil)
 	c.Log(b)
 
-	p, err := b.store.Get("test/a/b/c/d")
+	p, err := b.store.Get(testRoot + "a/a/a")
 	c.Assert(err, IsNil)
+	c.Assert(p.Value, DeepEquals, []byte("a/a/a"))
 	c.Log("root=", b.Root)
 	c.Log(p.Key, string(p.Value))
 }

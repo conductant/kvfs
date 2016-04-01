@@ -17,10 +17,7 @@ var _ = Suite(&TestSuiteDirLike{})
 
 func (suite *TestSuiteDirLike) SetUpSuite(c *C) {
 
-	for _, url := range []string{
-		zkUrl(),
-		consulUrl(),
-	} {
+	for _, url := range kvstores() {
 		b, err := NewBackend(url, nil)
 		c.Assert(err, IsNil)
 		suite.stores = append(suite.stores, b.store)
@@ -49,10 +46,7 @@ func (suite *TestSuiteDirLike) TearDownSuite(c *C) {
 }
 
 func (suite *TestSuiteDirLike) TestDirCursor(c *C) {
-	for _, url := range []string{
-		zkUrl(),
-		consulUrl(),
-	} {
+	for _, url := range kvstores() {
 		u := url + "/" + path.Join(testRoot, "a")
 		b, err := NewBackend(u, nil)
 		c.Assert(err, IsNil)
@@ -82,10 +76,7 @@ func (suite *TestSuiteDirLike) TestDirCursor(c *C) {
 }
 
 func (suite *TestSuiteDirLike) TestDir(c *C) {
-	for _, url := range []string{
-		zkUrl(),
-		consulUrl(),
-	} {
+	for _, url := range kvstores() {
 		{
 			u := url + "/" + path.Join(testRoot, "a")
 			b, err := NewBackend(u, nil)
@@ -124,12 +115,10 @@ func (suite *TestSuiteDirLike) TestDir(c *C) {
 }
 
 func (suite *TestSuiteDirLike) TestCreateAndDeleteDir(c *C) {
-	for _, url := range []string{
-		zkUrl(),
-		consulUrl(),
-	} {
+	for _, url := range kvstores() {
 		u := url + "/" + testRoot
 		b, err := NewBackend(u, nil)
+		c.Log(u)
 		c.Assert(err, IsNil)
 
 		ctx := b.Context(nil)
@@ -171,12 +160,10 @@ func (suite *TestSuiteDirLike) TestCreateAndDeleteDir(c *C) {
 }
 
 func (suite *TestSuiteDirLike) TestPutGetAndDelete(c *C) {
-	for _, url := range []string{
-		zkUrl(),
-		consulUrl(),
-	} {
+	for _, url := range kvstores() {
 		u := url + "/" + testRoot
 		b, err := NewBackend(u, nil)
+		c.Log(u)
 		c.Assert(err, IsNil)
 
 		ctx := b.Context(nil)
