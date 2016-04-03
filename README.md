@@ -16,7 +16,7 @@ by a KV store, such as Zookeeper, Etcd, and Consul.  Some use cases:
 
 ## How to
 
-1. Use as a library
+### Use as a library
 
 ```
 import (
@@ -37,7 +37,7 @@ func main() {
 }
 ```
 
-2. Use Docker container
+### Use Docker container
 
 The basic idea here is to start one container that mounts the backend as a filesystem in the container's namespace and
 then start another process (via `docker exec`) in the same namespace so that the new process can interact with the
@@ -54,8 +54,6 @@ Note: to avoid using `--privileged` use `--cap-add SYS_ADMIN --device /dev/fuse`
 With this container running, start another one
 
 ```
-docker exec -ti kvfs /bin/bash
-
 $ docker exec -ti kvfs /bin/bash
 bash-4.3# ls -al /tmp/zk
 total 0
