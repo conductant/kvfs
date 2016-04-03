@@ -52,7 +52,7 @@ func (suite *TestSuiteDirLike) TestDirCursor(c *C) {
 		c.Assert(err, IsNil)
 
 		ctx := b.Context(nil)
-		dir := ctx.Dir()
+		dir := ctx.Dir([]string{})
 		c.Log("store=", u)
 
 		found := map[string]bool{}
@@ -83,7 +83,7 @@ func (suite *TestSuiteDirLike) TestDir(c *C) {
 			c.Assert(err, IsNil)
 
 			ctx := b.Context(nil)
-			dir := ctx.Dir()
+			dir := ctx.Dir([]string{})
 			c.Log("store=", u)
 
 			dirB := dir.Dir("b") // a/b but b is not a subtree
@@ -102,7 +102,7 @@ func (suite *TestSuiteDirLike) TestDir(c *C) {
 			c.Assert(err, IsNil)
 
 			ctx := b.Context(nil)
-			dir := ctx.Dir()
+			dir := ctx.Dir([]string{})
 			c.Log("store=", u)
 
 			dirX := dir.Dir("x")
@@ -122,7 +122,7 @@ func (suite *TestSuiteDirLike) TestCreateAndDeleteDir(c *C) {
 		c.Assert(err, IsNil)
 
 		ctx := b.Context(nil)
-		root := ctx.Dir()
+		root := ctx.Dir([]string{})
 		c.Log("store=", u)
 
 		dirA := root.Dir("a")
@@ -167,7 +167,7 @@ func (suite *TestSuiteDirLike) TestPutGetAndDelete(c *C) {
 		c.Assert(err, IsNil)
 
 		ctx := b.Context(nil)
-		root := ctx.Dir()
+		root := ctx.Dir([]string{})
 		c.Log("store=", u)
 
 		dirA := root.Dir("a")

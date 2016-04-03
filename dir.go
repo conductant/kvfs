@@ -26,7 +26,7 @@ var _ = fs.HandleReadDirAller(&Dir{})
 func (d *Dir) ReadDirAll(c context.Context) ([]fuse.Dirent, error) {
 	var res []fuse.Dirent
 	err := d.fs.db.View(c, func(ctx Context) error {
-		b := ctx.Dir()
+		b := ctx.Dir(d.path)
 		if b == nil {
 			return errors.New("dir no longer exists")
 		}
@@ -51,7 +51,7 @@ var _ = fs.NodeStringLookuper(&Dir{})
 func (d *Dir) Lookup(c context.Context, name string) (fs.Node, error) {
 	var n fs.Node
 	err := d.fs.db.View(c, func(ctx Context) error {
-		b := ctx.Dir()
+		b := ctx.Dir(d.path)
 		if b == nil {
 			return errors.New("dir no longer exists")
 		}
@@ -87,7 +87,7 @@ var _ = fs.NodeMkdirer(&Dir{})
 func (d *Dir) Mkdir(c context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
 	name := req.Name
 	err := d.fs.db.Update(c, func(ctx Context) error {
-		b := ctx.Dir()
+		b := ctx.Dir(d.path)
 		if b == nil {
 			return errors.New("dir no longer exists")
 		}
@@ -115,10 +115,7 @@ func (d *Dir) Mkdir(c context.Context, req *fuse.MkdirRequest) (fs.Node, error) 
 var _ = fs.NodeCreater(&Dir{})
 
 func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
-	if len(d.path) == 0 {
-		// only dirs go in root dir
-		return nil, nil, fuse.EPERM
-	}
+
 	name := req.Name
 	f := &File{
 		dir:     d,
@@ -134,7 +131,7 @@ var _ = fs.NodeRemover(&Dir{})
 func (d *Dir) Remove(c context.Context, req *fuse.RemoveRequest) error {
 	name := req.Name
 	return d.fs.db.Update(c, func(ctx Context) error {
-		b := ctx.Dir()
+		b := ctx.Dir(d.path)
 		if b == nil {
 			return errors.New("dir no longer exists")
 		}

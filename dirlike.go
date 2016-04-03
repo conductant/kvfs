@@ -46,6 +46,10 @@ func (this dir) Dir(name string) DirLike {
 // for all children (nth level down).
 func normalize(parent, child string) string {
 	n := strings.Split(strings.Replace(child, parent+"/", "", 1), "/")[0]
+	// See CreateDir -- we create a dummy node with a dot.  Filter this one out
+	if n == "__dir__" {
+		return ""
+	}
 	return n
 }
 
@@ -89,7 +93,10 @@ func (this dir) Cursor() <-chan *Entry {
 func (this dir) CreateDir(name string) (DirLike, error) {
 	child := this
 	child.path = append(child.path, name)
-	p := filepath.Join(child.path...) + "/"
+
+	// Create a node one level below to signify this is a folder.  Otherwise, a list will
+	// just return 0 children and show this as a file.
+	p := filepath.Join(child.path...) + "/__dir__"
 	err := child.store.Put(p, []byte{}, nil)
 	if err != nil {
 		return nil, err
@@ -97,9 +104,25 @@ func (this dir) CreateDir(name string) (DirLike, error) {
 	return &child, nil
 }
 
+// Deletes the entire directory -- this means for some kvstores this operation will
+// recursively deletes all children.
 func (this dir) DeleteDir(name string) error {
-	p := filepath.Join(append(this.path, name)...) + "/"
-	return this.store.Delete(p)
+	// remove any contents of the directory / subtree
+	d := this.Dir(name)
+	if d != nil {
+		for entry := range d.Cursor() {
+			if entry.Dir {
+				return d.DeleteDir(entry.Key)
+			} else {
+				return d.Delete(entry.Key)
+			}
+		}
+	}
+	// remove the folder marker
+	if err := this.store.Delete(filepath.Join(append(this.path, name)...) + "/__dir__"); err != nil {
+		return err
+	}
+	return this.store.Delete(filepath.Join(append(this.path, name)...) + "/")
 }
 
 func (this dir) Get(key string) []byte {

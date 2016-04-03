@@ -6,9 +6,21 @@ import (
 	"github.com/conductant/gohm/pkg/runtime"
 	"github.com/conductant/kvfs"
 	"io"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
+
+	fromKernel := make(chan os.Signal)
+
+	// kill -9 is SIGKILL and is uncatchable.
+	signal.Notify(fromKernel, syscall.SIGHUP)  // 1
+	signal.Notify(fromKernel, syscall.SIGINT)  // 2
+	signal.Notify(fromKernel, syscall.SIGQUIT) // 3
+	signal.Notify(fromKernel, syscall.SIGABRT) // 6
+	signal.Notify(fromKernel, syscall.SIGTERM) // 15
 
 	config := &struct {
 		kvfs.Config
@@ -36,11 +48,26 @@ func main() {
 				}
 			}
 
-			return kvfs.Mount(url, mountPath, &config.Config)
+			closer, err := kvfs.Mount(url, mountPath, &config.Config)
+			if err != nil {
+				return err
+			}
+
+			for range fromKernel {
+				fmt.Println("Unmounting", mountPath)
+				if err := kvfs.Unmount(mountPath); err == nil {
+					return nil
+				} else {
+					fmt.Println("Cannot unmount. Err=", err)
+				}
+			}
+			return closer.Close()
 		},
 		func(w io.Writer) {
-			fmt.Fprintln(w, "Mount backend by url to local file system path")
+			fmt.Fprintln(w, "Mount backend by url to local file system path.")
+			fmt.Fprintln(w, "Usage: kvfs mount <flags> | <url> <mountpoint>")
 		})
 
 	runtime.Main()
+
 }

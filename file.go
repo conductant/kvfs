@@ -29,7 +29,7 @@ var _ = fs.Handle(&File{})
 // the transaction, bolt might reuse the db page.
 func (f *File) load(c context.Context, fn func([]byte)) error {
 	err := f.dir.fs.db.View(c, func(ctx Context) error {
-		b := ctx.Dir()
+		b := ctx.Dir(f.dir.path)
 		v := b.Get(f.name)
 		if v == nil {
 			return fuse.ESTALE
@@ -149,7 +149,7 @@ func (f *File) Flush(c context.Context, req *fuse.FlushRequest) error {
 	}
 
 	err := f.dir.fs.db.Update(c, func(ctx Context) error {
-		b := ctx.Dir()
+		b := ctx.Dir(f.dir.path)
 		return b.Put(f.name, f.data)
 	})
 	if err != nil {

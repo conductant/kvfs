@@ -8,7 +8,7 @@ import (
 
 type Context interface {
 	context.Context
-	Dir() DirLike
+	Dir([]string) DirLike
 	Store() store.Store
 }
 
@@ -32,7 +32,7 @@ func (this *context_t) Store() store.Store {
 	return contextGetStore(this)
 }
 
-func (this *context_t) Dir() DirLike {
+func (this *context_t) Dir(path []string) DirLike {
 	s := contextGetStore(this)
 	if s == nil {
 		panic(fmt.Errorf("assert-store-failed"))
@@ -43,7 +43,7 @@ func (this *context_t) Dir() DirLike {
 	}
 	return &dir{
 		store: s,
-		path:  p,
+		path:  append(p, path...),
 	}
 }
 
