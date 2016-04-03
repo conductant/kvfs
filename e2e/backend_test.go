@@ -1,9 +1,11 @@
 package kvfs
 
 import (
+	"github.com/conductant/kvfs"
 	"github.com/docker/libkv/store"
 	"golang.org/x/net/context"
 	. "gopkg.in/check.v1"
+	net "net/url"
 	"os"
 	"testing"
 )
@@ -43,9 +45,10 @@ func kvstores() []string {
 func (suite *TestSuiteBackend) SetUpSuite(c *C) {
 
 	for _, url := range kvstores() {
-		b, err := NewBackend(url, nil)
+		u, _ := net.Parse(url)
+		b, err := kvfs.GetStore(u, nil)
 		c.Assert(err, IsNil)
-		suite.stores = append(suite.stores, b.store)
+		suite.stores = append(suite.stores, b)
 	}
 
 	// Create some test data
@@ -71,24 +74,20 @@ func (suite *TestSuiteBackend) TearDownSuite(c *C) {
 }
 
 func (suite *TestSuiteBackend) TestNewBackend(c *C) {
-	url := consulUrl() + "/" + testRoot
-	b, err := NewBackend(url, nil)
-	c.Assert(err, IsNil)
-	c.Log(b)
-
-	p, err := b.store.Get(testRoot + "a/a/a")
-	c.Assert(err, IsNil)
-	c.Assert(p.Value, DeepEquals, []byte("a/a/a"))
-	c.Log("root=", b.Root)
-	c.Log(p.Key, string(p.Value))
+	for _, url := range kvstores() {
+		b, err := kvfs.NewBackend(url, nil)
+		c.Assert(err, IsNil)
+		c.Assert(b, Not(IsNil))
+	}
 }
 
 func (suite *TestSuiteBackend) TestNewContext(c *C) {
-	url := consulUrl() + "/" + testRoot
-	b, err := NewBackend(url, nil)
-	c.Assert(err, IsNil)
-	ctx := NewContext(context.Background(), b.store, []string{})
-	s := ctx.Store()
-	c.Assert(s, Not(IsNil))
-	c.Assert(s, Equals, b.store)
+	for _, url := range kvstores() {
+		u, _ := net.Parse(url)
+		b, err := kvfs.GetStore(u, nil)
+		c.Assert(err, IsNil)
+		ctx := kvfs.NewContext(context.Background(), b, []string{})
+		s := ctx.Store()
+		c.Assert(s, Equals, b)
+	}
 }

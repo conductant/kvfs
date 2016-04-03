@@ -1,3 +1,6 @@
+# Build artifacts
+build/*
+
 # Emacs
 *~
 .DS_Store

@@ -1,8 +1,10 @@
 package kvfs
 
 import (
+	"github.com/conductant/kvfs"
 	"github.com/docker/libkv/store"
 	. "gopkg.in/check.v1"
+	net "net/url"
 	"path"
 	"testing"
 )
@@ -18,9 +20,10 @@ var _ = Suite(&TestSuiteDirLike{})
 func (suite *TestSuiteDirLike) SetUpSuite(c *C) {
 
 	for _, url := range kvstores() {
-		b, err := NewBackend(url, nil)
+		u, _ := net.Parse(url)
+		b, err := kvfs.GetStore(u, nil)
 		c.Assert(err, IsNil)
-		suite.stores = append(suite.stores, b.store)
+		suite.stores = append(suite.stores, b)
 	}
 
 	// Create some test data
@@ -48,7 +51,7 @@ func (suite *TestSuiteDirLike) TearDownSuite(c *C) {
 func (suite *TestSuiteDirLike) TestDirCursor(c *C) {
 	for _, url := range kvstores() {
 		u := url + "/" + path.Join(testRoot, "a")
-		b, err := NewBackend(u, nil)
+		b, err := kvfs.NewBackend(u, nil)
 		c.Assert(err, IsNil)
 
 		ctx := b.Context(nil)
@@ -79,7 +82,7 @@ func (suite *TestSuiteDirLike) TestDir(c *C) {
 	for _, url := range kvstores() {
 		{
 			u := url + "/" + path.Join(testRoot, "a")
-			b, err := NewBackend(u, nil)
+			b, err := kvfs.NewBackend(u, nil)
 			c.Assert(err, IsNil)
 
 			ctx := b.Context(nil)
@@ -98,7 +101,7 @@ func (suite *TestSuiteDirLike) TestDir(c *C) {
 
 		{
 			u := url + "/" + path.Join(testRoot, "b")
-			b, err := NewBackend(u, nil)
+			b, err := kvfs.NewBackend(u, nil)
 			c.Assert(err, IsNil)
 
 			ctx := b.Context(nil)
@@ -117,7 +120,7 @@ func (suite *TestSuiteDirLike) TestDir(c *C) {
 func (suite *TestSuiteDirLike) TestCreateAndDeleteDir(c *C) {
 	for _, url := range kvstores() {
 		u := url + "/" + testRoot
-		b, err := NewBackend(u, nil)
+		b, err := kvfs.NewBackend(u, nil)
 		c.Log(u)
 		c.Assert(err, IsNil)
 
@@ -162,7 +165,7 @@ func (suite *TestSuiteDirLike) TestCreateAndDeleteDir(c *C) {
 func (suite *TestSuiteDirLike) TestPutGetAndDelete(c *C) {
 	for _, url := range kvstores() {
 		u := url + "/" + testRoot
-		b, err := NewBackend(u, nil)
+		b, err := kvfs.NewBackend(u, nil)
 		c.Log(u)
 		c.Assert(err, IsNil)
 

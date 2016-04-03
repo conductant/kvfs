@@ -46,8 +46,6 @@ func NewBackend(url string, c *Config) (*Backend, error) {
 	if err != nil {
 		return nil, err
 	}
-	hosts := strings.Split(u.Host, ",")
-
 	config := &store.Config{
 		Bucket: u.Path,
 	}
@@ -71,32 +69,30 @@ func NewBackend(url string, c *Config) (*Backend, error) {
 		Url:  u,
 		Root: strings.Split(root, "/"),
 	}
-	switch u.Scheme {
-	case "zk":
-		s, err := libkv.NewStore(store.ZK, hosts, config)
-		if err != nil {
-			return nil, err
-		}
-		backend.store = s
-	case "etcd":
-		s, err := libkv.NewStore(store.ETCD, hosts, config)
-		if err != nil {
-			return nil, err
-		}
-		backend.store = s
-	case "consul":
-		s, err := libkv.NewStore(store.CONSUL, hosts, config)
-		if err != nil {
-			return nil, err
-		}
-		backend.store = s
-	default:
-		return nil, &ErrNotSupported{u.Scheme}
-	}
 
+	s, err := GetStore(u, config)
+	if err != nil {
+		return nil, err
+	}
+	backend.store = s
 	// create the root dir
 	if root != "" {
 		backend.store.Put(root, []byte{}, nil) // ignore error here.
 	}
 	return backend, nil
+}
+
+func GetStore(u *net.URL, config *store.Config) (s store.Store, err error) {
+	hosts := strings.Split(u.Host, ",")
+	switch u.Scheme {
+	case "zk":
+		s, err = libkv.NewStore(store.ZK, hosts, config)
+	case "etcd":
+		s, err = libkv.NewStore(store.ETCD, hosts, config)
+	case "consul":
+		s, err = libkv.NewStore(store.CONSUL, hosts, config)
+	default:
+		s, err = nil, &ErrNotSupported{u.Scheme}
+	}
+	return
 }
