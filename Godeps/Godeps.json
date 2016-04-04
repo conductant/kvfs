@@ -1,0 +1,84 @@
+{
+	"ImportPath": "github.com/conductant/kvfs",
+	"GoVersion": "go1.6",
+	"Deps": [
+		{
+			"ImportPath": "bazil.org/fuse",
+			"Rev": "37bfa8be929171feec943f3496bc4befdeaf10db"
+		},
+		{
+			"ImportPath": "bazil.org/fuse/fs",
+			"Rev": "37bfa8be929171feec943f3496bc4befdeaf10db"
+		},
+		{
+			"ImportPath": "bazil.org/fuse/fuseutil",
+			"Rev": "37bfa8be929171feec943f3496bc4befdeaf10db"
+		},
+		{
+			"ImportPath": "github.com/coreos/etcd/client",
+			"Comment": "v2.3.0-235-gb324735",
+			"Rev": "b3247356c1fbf2796c694075fcce7720e67fb7db"
+		},
+		{
+			"ImportPath": "github.com/coreos/etcd/pkg/pathutil",
+			"Comment": "v2.3.0-235-gb324735",
+			"Rev": "b3247356c1fbf2796c694075fcce7720e67fb7db"
+		},
+		{
+			"ImportPath": "github.com/coreos/etcd/pkg/types",
+			"Comment": "v2.3.0-235-gb324735",
+			"Rev": "b3247356c1fbf2796c694075fcce7720e67fb7db"
+		},
+		{
+			"ImportPath": "github.com/docker/libkv",
+			"Comment": "v0.1.0-27-gc1c47ce",
+			"Rev": "c1c47ced92aca5c55094a2dde949f88046b86c27"
+		},
+		{
+			"ImportPath": "github.com/docker/libkv/store",
+			"Comment": "v0.1.0-27-gc1c47ce",
+			"Rev": "c1c47ced92aca5c55094a2dde949f88046b86c27"
+		},
+		{
+			"ImportPath": "github.com/docker/libkv/store/consul",
+			"Comment": "v0.1.0-27-gc1c47ce",
+			"Rev": "c1c47ced92aca5c55094a2dde949f88046b86c27"
+		},
+		{
+			"ImportPath": "github.com/docker/libkv/store/etcd",
+			"Comment": "v0.1.0-27-gc1c47ce",
+			"Rev": "c1c47ced92aca5c55094a2dde949f88046b86c27"
+		},
+		{
+			"ImportPath": "github.com/docker/libkv/store/zookeeper",
+			"Comment": "v0.1.0-27-gc1c47ce",
+			"Rev": "c1c47ced92aca5c55094a2dde949f88046b86c27"
+		},
+		{
+			"ImportPath": "github.com/hashicorp/consul/api",
+			"Comment": "v0.6.4-188-g140cde6",
+			"Rev": "140cde6f42c158f5082627a42f042c868fbc050e"
+		},
+		{
+			"ImportPath": "github.com/hashicorp/go-cleanhttp",
+			"Rev": "875fb671b3ddc66f8e2f0acc33829c8cb989a38d"
+		},
+		{
+			"ImportPath": "github.com/hashicorp/serf/coordinate",
+			"Comment": "v0.7.0-48-g979180d",
+			"Rev": "979180d19cb3c60f58fda490533e8e22a21c5aae"
+		},
+		{
+			"ImportPath": "github.com/samuel/go-zookeeper/zk",
+			"Rev": "218e9c81c0dd8b3b18172b2bbfad92cc7d6db55f"
+		},
+		{
+			"ImportPath": "github.com/ugorji/go/codec",
+			"Rev": "a396ed22fc049df733440d90efe17475e3929ccb"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "024ed629fd292398cfd43c9678a5bf004f7defdc"
+		}
+	]
+}
