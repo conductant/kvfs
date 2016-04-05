@@ -6,14 +6,26 @@ import (
 	"github.com/docker/libkv/store"
 	"golang.org/x/net/context"
 	net "net/url"
+	"path/filepath"
 	"strings"
 	"time"
 )
 
+type NameFromKeyFunc func(parent string, key string) (name string)
+type DeleteEmptyParentFunc func(store store.Store, key string) error
+
+// Sadly libkv doesn't not abstract away the differences in handling the keys and other behaviors
+// So we'd have to create something like this to make sure things work across different kvstores.
+type Handler struct {
+	NameFromKey       NameFromKeyFunc
+	DeleteEmptyParent DeleteEmptyParentFunc
+}
+
 type Backend struct {
-	store store.Store
-	Url   *net.URL
-	Root  []string
+	store   store.Store
+	Url     *net.URL
+	Root    []string
+	Handler *Handler
 }
 
 func (this *Backend) View(c context.Context, f func(Context) error) error {
@@ -30,7 +42,7 @@ func (this *Backend) Context(ctx context.Context) Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	return NewContext(ctx, this.store, this.Root)
+	return NewContext(ctx, this.store, this.Root, this.Handler)
 }
 
 type Config struct {
@@ -70,11 +82,13 @@ func NewBackend(url string, c *Config) (*Backend, error) {
 		Root: strings.Split(root, "/"),
 	}
 
-	s, err := GetStore(u, config)
+	s, h, err := GetStore(u, config)
 	if err != nil {
 		return nil, err
 	}
 	backend.store = s
+	backend.Handler = h
+
 	// create the root dir
 	if root != "" {
 		backend.store.Put(root, []byte{}, nil) // ignore error here.
@@ -82,15 +96,46 @@ func NewBackend(url string, c *Config) (*Backend, error) {
 	return backend, nil
 }
 
-func GetStore(u *net.URL, config *store.Config) (s store.Store, err error) {
+func GetStore(u *net.URL, config *store.Config) (s store.Store, h *Handler, err error) {
 	hosts := strings.Split(u.Host, ",")
 	switch u.Scheme {
 	case "zk":
 		s, err = libkv.NewStore(store.ZK, hosts, config)
+		h = &Handler{
+			NameFromKey: func(parent string, key string) (name string) {
+				// Zk return the name, not the path.  So b in /a/b is just b
+				return key
+			},
+			DeleteEmptyParent: func(store store.Store, key string) error {
+				return store.Delete(key)
+			},
+		}
 	case "etcd":
 		s, err = libkv.NewStore(store.ETCD, hosts, config)
+		h = &Handler{
+			NameFromKey: func(parent string, key string) (name string) {
+				// Etcd returns the absolute path.  So we need to split the path and return the name.
+				if filepath.IsAbs(key) {
+					key = key[1:]
+				}
+				return strings.Split(strings.Replace(key, parent+"/", "", 1), "/")[0]
+
+			},
+			DeleteEmptyParent: func(store store.Store, key string) error {
+				return store.DeleteTree(key)
+			},
+		}
 	case "consul":
 		s, err = libkv.NewStore(store.CONSUL, hosts, config)
+		h = &Handler{
+			NameFromKey: func(parent string, key string) (name string) {
+				// Consul returns the full path but without the leading '/'.
+				return strings.Split(strings.Replace(key, parent+"/", "", 1), "/")[0]
+			},
+			DeleteEmptyParent: func(store store.Store, key string) error {
+				return store.DeleteTree(key)
+			},
+		}
 	default:
 		s, err = nil, &ErrNotSupported{u.Scheme}
 	}

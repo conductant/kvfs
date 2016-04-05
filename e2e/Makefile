@@ -26,16 +26,14 @@ CONSUL_HOSTS?=${KV_IP}:8500
 ETCD_HOSTS?=${KV_IP}:4001
 
 test:
-	ZK_HOSTS=$(ZK_HOSTS) \
-	CONSUL_HOSTS=$(CONSUL_HOSTS) \
-	ETCD_HOSTS=$(ETCD_HOSTS) \
+	ZK_HOSTS=$(ZK_HOSTS) CONSUL_HOSTS=$(CONSUL_HOSTS) ETCD_HOSTS=$(ETCD_HOSTS) \
 	${GODEP} go test ./... -v ${TEST_ARGS} -check.vv
 
 run:
 	${GODEP} go run cmd/kvfs.go mount -url zk://$$(docker-machine ip kv)/machine -m $$(pwd)/tmp
 
 # UI at port 8080
-start-zk: create-cluster
+start-zk: stop-zk
 	-docker ${KV_CONFIG} run -d --name zk \
 		-p 8080:8080 -p 2181:2181 -p 2888:2888 -p 3888:3888 \
 		conductant/zk:latest bootstrap -ip ${KV_IP} -S ${KV_IP}
@@ -44,7 +42,7 @@ stop-zk:
 	-docker ${KV_CONFIG} rm zk
 
 # UI at port 8500
-start-consul: create-cluster
+start-consul: stop-consul
 	-docker ${KV_CONFIG} run -d --name consul \
 		-p 8400:8400 -p 8500:8500 -p 8600:53/udp \
 		-h "consul" progrium/consul -server -bootstrap -ui-dir /ui
@@ -53,7 +51,7 @@ stop-consul:
 	-docker ${KV_CONFIG} rm consul
 
 # UI at port 3000
-start-etcd: create-cluster
+start-etcd: stop-etcd
 	-docker ${KV_CONFIG} run -d --name etcd \
 		-p 4001:4001 -p 2380:2380 -p 2379:2379 quay.io/coreos/etcd:v2.0.3 \
 		-name etcd0 \
@@ -74,5 +72,5 @@ stop-etcd:
 	-docker ${KV_CONFIG} rm etcd
 	-docker ${KV_CONFIG} rm coregi
 
-start-kvs: stop-kvs start-zk start-consul start-etcd
+start-kvs: start-zk start-consul start-etcd
 stop-kvs: stop-zk stop-consul stop-etcd

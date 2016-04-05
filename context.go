@@ -18,14 +18,17 @@ type context_t struct {
 
 type storeKeyType int
 type rootKeyType int
+type handlerKeyType int
 
 const (
-	storeKey storeKeyType = 1
-	rootKey  rootKeyType  = 2
+	storeKey   storeKeyType   = 1
+	rootKey    rootKeyType    = 2
+	handlerKey handlerKeyType = 3
 )
 
-func NewContext(ctx context.Context, store store.Store, path []string) Context {
-	return contextPutRoot(contextPutStore(&context_t{ctx}, store), path)
+func NewContext(ctx context.Context, store store.Store, path []string, handler *Handler) Context {
+	return contextPutHandler(contextPutRoot(contextPutStore(&context_t{ctx},
+		store), path), handler)
 }
 
 func (this *context_t) Store() store.Store {
@@ -41,9 +44,14 @@ func (this *context_t) Dir(path []string) DirLike {
 	if p == nil {
 		panic(fmt.Errorf("assert-root-failed"))
 	}
+	h := contextGetHandler(this)
+	if h == nil {
+		panic(fmt.Errorf("assert-handler-failed"))
+	}
 	return &dir{
-		store: s,
-		path:  append(p, path...),
+		store:   s,
+		path:    append(p, path...),
+		handler: h,
 	}
 }
 
@@ -67,4 +75,15 @@ func contextGetRoot(ctx *context_t) []string {
 
 func contextPutRoot(ctx *context_t, p []string) *context_t {
 	return &context_t{context.WithValue(ctx, rootKey, p)}
+}
+
+func contextGetHandler(ctx *context_t) *Handler {
+	if s, ok := ctx.Value(handlerKey).(*Handler); ok {
+		return s
+	}
+	return nil
+}
+
+func contextPutHandler(ctx *context_t, h *Handler) *context_t {
+	return &context_t{context.WithValue(ctx, handlerKey, h)}
 }

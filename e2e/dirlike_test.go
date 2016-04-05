@@ -1,18 +1,19 @@
-package kvfs
+package e2e
 
 import (
 	"github.com/conductant/kvfs"
 	"github.com/docker/libkv/store"
 	. "gopkg.in/check.v1"
-	net "net/url"
 	"path"
+	"strings"
 	"testing"
 )
 
 func TestDirLike(t *testing.T) { TestingT(t) }
 
 type TestSuiteDirLike struct {
-	stores []store.Store
+	stores   []store.Store
+	handlers []*kvfs.Handler
 }
 
 var _ = Suite(&TestSuiteDirLike{})
@@ -20,14 +21,21 @@ var _ = Suite(&TestSuiteDirLike{})
 func (suite *TestSuiteDirLike) SetUpSuite(c *C) {
 
 	for _, url := range kvstores() {
-		u, _ := net.Parse(url)
-		b, err := kvfs.GetStore(u, nil)
+		b, h, err := kvfs.GetStore(url, nil)
 		c.Assert(err, IsNil)
 		suite.stores = append(suite.stores, b)
+		suite.handlers = append(suite.handlers, h)
 	}
 
 	// Create some test data
 	for _, s := range suite.stores {
+		s.Put(testRoot+"a/~dir~", []byte(""), nil)
+		s.Put(testRoot+"a/a/~dir~", []byte(""), nil)
+		s.Put(testRoot+"a/c/~dir~", []byte(""), nil)
+		s.Put(testRoot+"a/d/~dir~", []byte(""), nil)
+		s.Put(testRoot+"b/~dir~", []byte(""), nil)
+		s.Put(testRoot+"b/e/~dir~", []byte(""), nil)
+		s.Put(testRoot+"b/e/c/~dir~", []byte(""), nil)
 		s.Put(testRoot+"a/a/a", []byte("a/a/a"), nil)
 		s.Put(testRoot+"a/b", []byte("a/b"), nil)
 		s.Put(testRoot+"a/c/b", []byte("a/c/b"), nil)
@@ -42,15 +50,16 @@ func (suite *TestSuiteDirLike) SetUpSuite(c *C) {
 }
 
 func (suite *TestSuiteDirLike) TearDownSuite(c *C) {
-	for _, s := range suite.stores {
-		err := s.Delete("unit-tests/backend_test")
-		c.Log(err)
+	for i, s := range suite.stores {
+		d := kvfs.NewDirLike(s, strings.Split(testRoot, "/"), suite.handlers[i])
+		err := d.DeleteDir(".")
+		c.Log("2>>>>", err)
 	}
 }
 
 func (suite *TestSuiteDirLike) TestDirCursor(c *C) {
 	for _, url := range kvstores() {
-		u := url + "/" + path.Join(testRoot, "a")
+		u := url.String() + "/" + path.Join(testRoot, "a")
 		b, err := kvfs.NewBackend(u, nil)
 		c.Assert(err, IsNil)
 
@@ -71,7 +80,7 @@ func (suite *TestSuiteDirLike) TestDirCursor(c *C) {
 			"d": true,  //s.Put(testRoot+"a/d/c", []byte("a/d/c"), nil)
 		}
 
-		c.Assert(len(expect), Equals, len(found))
+		c.Assert(len(found), Equals, len(expect))
 		for k, v := range expect {
 			c.Assert(found[k], Equals, v)
 		}
@@ -81,7 +90,7 @@ func (suite *TestSuiteDirLike) TestDirCursor(c *C) {
 func (suite *TestSuiteDirLike) TestDir(c *C) {
 	for _, url := range kvstores() {
 		{
-			u := url + "/" + path.Join(testRoot, "a")
+			u := url.String() + "/" + path.Join(testRoot, "a")
 			b, err := kvfs.NewBackend(u, nil)
 			c.Assert(err, IsNil)
 
@@ -100,7 +109,7 @@ func (suite *TestSuiteDirLike) TestDir(c *C) {
 		}
 
 		{
-			u := url + "/" + path.Join(testRoot, "b")
+			u := url.String() + "/" + path.Join(testRoot, "b")
 			b, err := kvfs.NewBackend(u, nil)
 			c.Assert(err, IsNil)
 
@@ -119,7 +128,7 @@ func (suite *TestSuiteDirLike) TestDir(c *C) {
 
 func (suite *TestSuiteDirLike) TestCreateAndDeleteDir(c *C) {
 	for _, url := range kvstores() {
-		u := url + "/" + testRoot
+		u := url.String() + "/" + testRoot
 		b, err := kvfs.NewBackend(u, nil)
 		c.Log(u)
 		c.Assert(err, IsNil)
@@ -159,12 +168,20 @@ func (suite *TestSuiteDirLike) TestCreateAndDeleteDir(c *C) {
 
 		err = dirB.DeleteDir("y")
 		c.Assert(err, IsNil)
+
+		// Nil directory means it doesn't exist
+		x := dirA.Dir("x")
+		c.Assert(x, IsNil)
+
+		y := dirB.Dir("y")
+		c.Assert(y, IsNil)
+
 	}
 }
 
 func (suite *TestSuiteDirLike) TestPutGetAndDelete(c *C) {
 	for _, url := range kvstores() {
-		u := url + "/" + testRoot
+		u := url.String() + "/" + testRoot
 		b, err := kvfs.NewBackend(u, nil)
 		c.Log(u)
 		c.Assert(err, IsNil)
